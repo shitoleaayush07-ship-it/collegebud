@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CollegeBud – Budget • Tasks • Schedule</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .tab-active { border-bottom: 3px solid #4f46e5; color: #4f46e5; }
+    .card { transition: transform 0.15s ease; }
+    .card:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-white/20 p-2 rounded-lg">
+          <i class="fas fa-graduation-cap text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold">CollegeBud</h1>
+          <p class="text-indigo-200 text-xs">Budget • Tasks • Schedule</p>
+        </div>
+      </div>
+      <div class="text-sm text-indigo-100">
+        <span id="current-date"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="bg-white border-b sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4 flex overflow-x-auto">
+      <button onclick="showTab('dashboard')" id="tab-dashboard" class="tab-btn px-5 py-3 font-medium text-sm whitespace-nowrap tab-active">
+        <i class="fas fa-home mr-2"></i>Dashboard
+      </button>
+      <button onclick="showTab('budget')" id="tab-budget" class="tab-btn px-5 py-3 font-medium text-sm whitespace-nowrap text-slate-500">
+        <i class="fas fa-wallet mr-2"></i>Budget
+      </button>
+      <button onclick="showTab('tasks')" id="tab-tasks" class="tab-btn px-5 py-3 font-medium text-sm whitespace-nowrap text-slate-500">
+        <i class="fas fa-tasks mr-2"></i>Tasks
+      </button>
+      <button onclick="showTab('schedule')" id="tab-schedule" class="tab-btn px-5 py-3 font-medium text-sm whitespace-nowrap text-slate-500">
+        <i class="fas fa-calendar-alt mr-2"></i>Schedule
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+
+    <!-- ========== DASHBOARD ========== -->
+    <section id="dashboard" class="tab-content">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100 card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-slate-500 text-sm">Current Balance</p>
+              <p id="dash-balance" class="text-2xl font-bold text-indigo-600">₹0</p>
+            </div>
+            <div class="bg-indigo-100 p-3 rounded-full"><i class="fas fa-rupee-sign text-indigo-600"></i></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100 card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-slate-500 text-sm">Pending Tasks</p>
+              <p id="dash-tasks" class="text-2xl font-bold text-amber-600">0</p>
+            </div>
+            <div class="bg-amber-100 p-3 rounded-full"><i class="fas fa-check-circle text-amber-600"></i></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100 card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-slate-500 text-sm">Upcoming Events</p>
+              <p id="dash-events" class="text-2xl font-bold text-emerald-600">0</p>
+            </div>
+            <div class="bg-emerald-100 p-3 rounded-full"><i class="fas fa-calendar text-emerald-600"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+          <h2 class="font-semibold mb-4 flex items-center gap-2"><i class="fas fa-chart-pie text-indigo-500"></i> Spending by Category</h2>
+          <canvas id="dashChart" height="200"></canvas>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+          <h2 class="font-semibold mb-4 flex items-center gap-2"><i class="fas fa-clock text-indigo-500"></i> Today's Schedule</h2>
+          <div id="dash-today-events" class="space-y-2 text-sm">
+            <p class="text-slate-400">No events today</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+        <h2 class="font-semibold mb-3 flex items-center gap-2"><i class="fas fa-list-check text-indigo-500"></i> Priority Tasks</h2>
+        <div id="dash-priority-tasks" class="space-y-2">
+          <p class="text-slate-400 text-sm">No high priority tasks</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== BUDGET ========== -->
+    <section id="budget" class="tab-content hidden">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+          <p class="text-emerald-700 text-sm">Total Income</p>
+          <p id="total-income" class="text-xl font-bold text-emerald-700">₹0</p>
+        </div>
+        <div class="bg-rose-50 rounded-xl p-4 border border-rose-100">
+          <p class="text-rose-700 text-sm">Total Expenses</p>
+          <p id="total-expense" class="text-xl font-bold text-rose-700">₹0</p>
+        </div>
+        <div class="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+          <p class="text-indigo-700 text-sm">Balance</p>
+          <p id="total-balance" class="text-xl font-bold text-indigo-700">₹0</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Add Transaction -->
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100 lg:col-span-1">
+          <h2 class="font-semibold mb-4">Add Transaction</h2>
+          <form id="tx-form" class="space-y-3">
+            <div>
+              <label class="text-sm text-slate-600">Type</label>
+              <select id="tx-type" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm">
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">Amount (₹)</label>
+              <input type="number" id="tx-amount" min="1" step="1" required class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" placeholder="500" />
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">Category</label>
+              <select id="tx-category" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm">
+                <option>Food</option>
+                <option>Transport</option>
+                <option>Books</option>
+                <option>Entertainment</option>
+                <option>Rent</option>
+                <option>Fees</option>
+                <option>Salary / Pocket Money</option>
+                <option>Scholarship</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">Note</label>
+              <input type="text" id="tx-note" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" placeholder="Lunch at canteen" />
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">Date</label>
+              <input type="date" id="tx-date" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700">
+              Add Transaction
+            </button>
+          </form>
+        </div>
+
+        <!-- Transactions List + Chart -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+            <h2 class="font-semibold mb-3">Recent Transactions</h2>
+            <div id="tx-list" class="space-y-2 max-h-64 overflow-y-auto text-sm">
+              <p class="text-slate-400">No transactions yet</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+            <h2 class="font-semibold mb-3">Expense Breakdown</h2>
+            <canvas id="budgetChart" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TASKS ========== -->
+    <section id="tasks" class="tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+          <h2 class="font-semibold mb-4">Add Task</h2>
+          <form id="task-form" class="space-y-3">
+            <div>
+              <label class="text-sm text-slate-600">Task</label>
+              <input type="text" id="task-title" required class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" placeholder="Finish assignment" />
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">Priority</label>
+              <select id="task-priority" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm">
+                <option value="high">High</option>
+                <option value="medium" selected>Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">Due Date</label>
+              <input type="date" id="task-due" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700">
+              Add Task
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-2">
+          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="font-semibold">My Tasks</h2>
+              <div class="flex gap-2 text-xs">
+                <button onclick="filterTasks('all')" class="px-3 py-1 rounded-full bg-slate-100">All</button>
+                <button onclick="filterTasks('pending')" class="px-3 py-1 rounded-full bg-amber-100 text-amber-700">Pending</button>
+                <button onclick="filterTasks('done')" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">Done</button>
+              </div>
+            </div>
+            <div id="task-list" class="space-y-2">
+              <p class="text-slate-400 text-sm">No tasks yet</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SCHEDULE ========== -->
+    <section id="schedule" class="tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+          <h2 class="font-semibold mb-4">Add Event</h2>
+          <form id="event-form" class="space-y-3">
+            <div>
+              <label class="text-sm text-slate-600">Title</label>
+              <input type="text" id="event-title" required class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" placeholder="Math class / Project meeting" />
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">Date</label>
+              <input type="date" id="event-date" required class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-sm text-slate-600">Start</label>
+                <input type="time" id="event-start" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label class="text-sm text-slate-600">End</label>
+                <input type="time" id="event-end" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">Type</label>
+              <select id="event-type" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm">
+                <option>Class</option>
+                <option>Exam</option>
+                <option>Meeting</option>
+                <option>Personal</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">Notes</label>
+              <input type="text" id="event-notes" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" placeholder="Room 204" />
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700">
+              Add Event
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-2">
+          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="font-semibold">Upcoming Events</h2>
+              <input type="date" id="schedule-filter-date" class="border rounded-lg px-3 py-1 text-sm" onchange="renderEvents()" />
+            </div>
+            <div id="event-list" class="space-y-3">
+              <p class="text-slate-400 text-sm">No events scheduled</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="text-center text-slate-400 text-xs py-6">
+    CollegeBud • Data stored locally in your browser • Made for students
+  </footer>
+
+  <script>
+    // ========== DATA ========== 
+    let transactions = JSON.parse(localStorage.getItem('cb_transactions') || '[]');
+    let tasks = JSON.parse(localStorage.getItem('cb_tasks') || '[]');
+    let events = JSON.parse(localStorage.getItem('cb_events') || '[]');
+    let currentTaskFilter = 'all';
+    let budgetChart = null;
+    let dashChart = null;
+
+    // ========== HELPERS ========== 
+    function save() {
+      localStorage.setItem('cb_transactions', JSON.stringify(transactions));
+      localStorage.setItem('cb_tasks', JSON.stringify(tasks));
+      localStorage.setItem('cb_events', JSON.stringify(events));
+    }
+
+    function formatINR(n) {
+      return '₹' + Number(n).toLocaleString('en-IN');
+    }
+
+    function todayISO() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    // ========== TABS ========== 
+    function showTab(name) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(name).classList.remove('hidden');
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('tab-active', 'text-indigo-600');
+        btn.classList.add('text-slate-500');
+      });
+      const active = document.getElementById('tab-' + name);
+      active.classList.add('tab-active');
+      active.classList.remove('text-slate-500');
+      if (name === 'dashboard') updateDashboard();
+      if (name === 'budget') renderBudget();
+      if (name === 'tasks') renderTasks();
+      if (name === 'schedule') renderEvents();
+    }
+
+    // ========== BUDGET ========== 
+    document.getElementById('tx-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const tx = {
+        id: Date.now(),
+        type: document.getElementById('tx-type').value,
+        amount: Number(document.getElementById('tx-amount').value),
+        category: document.getElementById('tx-category').value,
+        note: document.getElementById('tx-note').value,
+        date: document.getElementById('tx-date').value || todayISO()
+      };
+      transactions.unshift(tx);
+      save();
+      e.target.reset();
+      document.getElementById('tx-date').value = todayISO();
+      renderBudget();
+      updateDashboard();
+    });
+
+    function deleteTx(id) {
+      transactions = transactions.filter(t => t.id !== id);
+      save();
+      renderBudget();
+      updateDashboard();
+    }
+
+    function renderBudget() {
+      const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      document.getElementById('total-income').textContent = formatINR(income);
+      document.getElementById('total-expense').textContent = formatINR(expense);
+      document.getElementById('total-balance').textContent = formatINR(income - expense);
+
+      const list = document.getElementById('tx-list');
+      if (transactions.length === 0) {
+        list.innerHTML = '<p class="text-slate-400">No transactions yet</p>';
+      } else {
+        list.innerHTML = transactions.slice(0, 30).map(t => `
+          <div class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+            <div>
+              <p class="font-medium">${t.note || t.category}</p>
+              <p class="text-xs text-slate-400">${t.date} • ${t.category}</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'} font-semibold">
+                ${t.type === 'income' ? '+' : '-'}${formatINR(t.amount)}
+              </span>
+              <button onclick="deleteTx(${t.id})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash text-xs"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Chart
+      const expenseByCat = {};
+      transactions.filter(t => t.type === 'expense').forEach(t => {
+        expenseByCat[t.category] = (expenseByCat[t.category] || 0) + t.amount;
+      });
+      const labels = Object.keys(expenseByCat);
+      const data = Object.values(expenseByCat);
+
+      if (budgetChart) budgetChart.destroy();
+      const ctx = document.getElementById('budgetChart').getContext('2d');
+      budgetChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: ['#6366f1','#f43f5e','#10b981','#f59e0b','#8b5cf6','#06b6d4','#84cc16','#ec4899']
+          }]
+        },
+        options: { plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
+      });
+    }
+
+    // ========== TASKS ========== 
+    document.getElementById('task-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const task = {
+        id: Date.now(),
+        title: document.getElementById('task-title').value,
+        priority: document.getElementById('task-priority').value,
+        due: document.getElementById('task-due').value,
+        done: false
+      };
+      tasks.unshift(task);
+      save();
+      e.target.reset();
+      renderTasks();
+      updateDashboard();
+    });
+
+    function toggleTask(id) {
+      const t = tasks.find(x => x.id === id);
+      if (t) { t.done = !t.done; save(); renderTasks(); updateDashboard(); }
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      save();
+      renderTasks();
+      updateDashboard();
+    }
+
+    function filterTasks(f) {
+      currentTaskFilter = f;
+      renderTasks();
+    }
+
+    function renderTasks() {
+      let filtered = tasks;
+      if (currentTaskFilter === 'pending') filtered = tasks.filter(t => !t.done);
+      if (currentTaskFilter === 'done') filtered = tasks.filter(t => t.done);
+
+      const list = document.getElementById('task-list');
+      if (filtered.length === 0) {
+        list.innerHTML = '<p class="text-slate-400 text-sm">No tasks</p>';
+        return;
+      }
+      const priorityColor = { high: 'bg-rose-100 text-rose-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-slate-100 text-slate-600' };
+      list.innerHTML = filtered.map(t => `
+        <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-100 ${t.done ? 'opacity-60 bg-slate-50' : ''}">
+          <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-4 h-4 accent-indigo-600" />
+          <div class="flex-1">
+            <p class="${t.done ? 'line-through text-slate-400' : 'font-medium'}">${t.title}</p>
+            <div class="flex gap-2 mt-1">
+              <span class="text-xs px-2 py-0.5 rounded-full ${priorityColor[t.priority]}">${t.priority}</span>
+              ${t.due ? `<span class="text-xs text-slate-400"><i class="far fa-calendar mr-1"></i>${t.due}</span>` : ''}
+            </div>
+          </div>
+          <button onclick="deleteTask(${t.id})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash text-xs"></i></button>
+        </div>
+      `).join('');
+    }
+
+    // ========== SCHEDULE ========== 
+    document.getElementById('event-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const ev = {
+        id: Date.now(),
+        title: document.getElementById('event-title').value,
+        date: document.getElementById('event-date').value,
+        start: document.getElementById('event-start').value,
+        end: document.getElementById('event-end').value,
+        type: document.getElementById('event-type').value,
+        notes: document.getElementById('event-notes').value
+      };
+      events.push(ev);
+      events.sort((a, b) => a.date.localeCompare(b.date) || (a.start || '').localeCompare(b.start || ''));
+      save();
+      e.target.reset();
+      document.getElementById('event-date').value = todayISO();
+      renderEvents();
+      updateDashboard();
+    });
+
+    function deleteEvent(id) {
+      events = events.filter(e => e.id !== id);
+      save();
+      renderEvents();
+      updateDashboard();
+    }
+
+    function renderEvents() {
+      const filterDate = document.getElementById('schedule-filter-date').value;
+      let filtered = events;
+      if (filterDate) filtered = events.filter(e => e.date === filterDate);
+      else filtered = events.filter(e => e.date >= todayISO()).slice(0, 20);
+
+      const list = document.getElementById('event-list');
+      if (filtered.length === 0) {
+        list.innerHTML = '<p class="text-slate-400 text-sm">No events found</p>';
+        return;
+      }
+      const typeColor = { Class: 'bg-blue-100 text-blue-700', Exam: 'bg-rose-100 text-rose-700', Meeting: 'bg-violet-100 text-violet-700', Personal: 'bg-emerald-100 text-emerald-700', Other: 'bg-slate-100 text-slate-600' };
+      list.innerHTML = filtered.map(e => `
+        <div class="flex items-start gap-3 p-3 rounded-lg border border-slate-100">
+          <div class="text-center min-w-[50px]">
+            <p class="text-xs text-slate-400">${e.date.slice(5)}</p>
+            <p class="font-bold text-indigo-600">${e.start || '--:--'}</p>
+          </div>
+          <div class="flex-1">
+            <p class="font-medium">${e.title}</p>
+            <div class="flex gap-2 mt-1 flex-wrap">
+              <span class="text-xs px-2 py-0.5 rounded-full ${typeColor[e.type] || typeColor.Other}">${e.type}</span>
+              ${e.end ? `<span class="text-xs text-slate-400">until ${e.end}</span>` : ''}
+              ${e.notes ? `<span class="text-xs text-slate-400">${e.notes}</span>` : ''}
+            </div>
+          </div>
+          <button onclick="deleteEvent(${e.id})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash text-xs"></i></button>
+        </div>
+      `).join('');
+    }
+
+    // ========== DASHBOARD ========== 
+    function updateDashboard() {
+      const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      document.getElementById('dash-balance').textContent = formatINR(income - expense);
+      document.getElementById('dash-tasks').textContent = tasks.filter(t => !t.done).length;
+      document.getElementById('dash-events').textContent = events.filter(e => e.date >= todayISO()).length;
+
+      // Today events
+      const todayEv = events.filter(e => e.date === todayISO());
+      const todayEl = document.getElementById('dash-today-events');
+      if (todayEv.length === 0) todayEl.innerHTML = '<p class="text-slate-400">No events today</p>';
+      else todayEl.innerHTML = todayEv.map(e => `
+        <div class="flex justify-between items-center py-1">
+          <span>${e.start || ''} ${e.title}</span>
+          <span class="text-xs text-slate-400">${e.type}</span>
+        </div>
+      `).join('');
+
+      // Priority tasks
+      const high = tasks.filter(t => !t.done && t.priority === 'high').slice(0, 5);
+      const priEl = document.getElementById('dash-priority-tasks');
+      if (high.length === 0) priEl.innerHTML = '<p class="text-slate-400 text-sm">No high priority tasks</p>';
+      else priEl.innerHTML = high.map(t => `
+        <div class="flex items-center gap-2 text-sm">
+          <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+          <span>${t.title}</span>
+          ${t.due ? `<span class="text-xs text-slate-400 ml-auto">${t.due}</span>` : ''}
+        </div>
+      `).join('');
+
+      // Dash chart
+      const expenseByCat = {};
+      transactions.filter(t => t.type === 'expense').forEach(t => {
+        expenseByCat[t.category] = (expenseByCat[t.category] || 0) + t.amount;
+      });
+      if (dashChart) dashChart.destroy();
+      const ctx = document.getElementById('dashChart').getContext('2d');
+      dashChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(expenseByCat),
+          datasets: [{
+            data: Object.values(expenseByCat),
+            backgroundColor: ['#6366f1','#f43f5e','#10b981','#f59e0b','#8b5cf6','#06b6d4','#84cc16']
+          }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }, cutout: '55%' }
+      });
+    }
+
+    // ========== INIT ========== 
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('tx-date').value = todayISO();
+    document.getElementById('event-date').value = todayISO();
+    document.getElementById('schedule-filter-date').value = '';
+
+    updateDashboard();
+    showTab('dashboard');
+  </script>
+</body>
+</html>
